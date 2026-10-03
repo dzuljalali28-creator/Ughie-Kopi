@@ -4,7 +4,7 @@ const { google } = require('googleapis');
 
 const app = express();
 
-// ==================================================
+/// ==================================================
 // 1. MIDDLEWARE (Penting: Untuk membaca input POST req.body & file statis)
 // ==================================================
 app.use(express.json()); // Membaca data berformat JSON dari frontend
@@ -14,14 +14,30 @@ app.use(express.static(path.join(__dirname, 'public'))); // Menyajikan file stat
 // ==================================================
 // 2. KONFIGURASI SPREADSHEET ID & KREDENSIAL GOOGLE
 // ==================================================
-// Pastikan mengganti 'ID_SPREADSHEET_ANDA_DI_SINI' dengan ID dari URL Google Sheets Anda
 const SPREADSHEET_ID = process.env.SPREADSHEET_ID || '15dq5D-IRr5q82duHDwNKl600110sIC5R2nRxJUkxINE';
 
 let credentials;
+
 if (process.env.GOOGLE_CREDENTIALS) {
-  credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
+  // Dipakai saat berjalan di Vercel (Hosting)
+  try {
+    const rawCreds = process.env.GOOGLE_CREDENTIALS;
+    credentials = typeof rawCreds === 'string' ? JSON.parse(rawCreds) : rawCreds;
+    
+    // Memperbaiki format private_key dari Vercel Environment Variables
+    if (credentials.private_key) {
+      credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
+    }
+  } catch (err) {
+    console.error('Gagal memproses GOOGLE_CREDENTIALS:', err);
+  }
 } else {
-  credentials = require('./credentials.json');
+  // Dipakai saat berjalan di komputer lokal (VS Code)
+  try {
+    credentials = require('./credentials.json');
+  } catch (err) {
+    console.error('File credentials.json tidak ditemukan secara lokal.');
+  }
 }
 
 // ==================================================
